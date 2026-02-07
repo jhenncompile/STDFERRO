@@ -121,9 +121,12 @@ CREATE TABLE PERSONA (
 
 -- Subtipos (Herencia 1:1)
 CREATE TABLE CLIENTE (
-    ID_Cliente INT PRIMARY KEY, -- Es PK y FK a la vez
-    Nit VARCHAR(20),
-    Razon_Social VARCHAR(100),
+    ID_Cliente INT PRIMARY KEY,            -- PK y FK a PERSONA
+    Nit VARCHAR(20) NOT NULL,
+    Razon_Social VARCHAR(100) NOT NULL,
+    Tipo_Cliente VARCHAR(10) NOT NULL
+        CHECK (Tipo_Cliente IN ('PERSONA', 'EMPRESA')),
+    
     FOREIGN KEY (ID_Cliente) REFERENCES PERSONA(ID_Persona)
 );
 
@@ -212,8 +215,6 @@ CREATE TABLE VENTA (
     Fecha_Emision DATETIME DEFAULT GETDATE(),
     Monto_Total DECIMAL(10,2) NOT NULL CHECK (Monto_Total >= 0),
     Tipo_Documento VARCHAR(30), -- 'Recibo Anticipo', 'Factura Final'
-    Nit_Factura VARCHAR(20),
-    Razon_Social VARCHAR(100),
     Es_Reserva BIT DEFAULT 0, -- 1 si es el pago parcial, 0 si es total
     FOREIGN KEY (ID_Cliente) REFERENCES CLIENTE(ID_Cliente),
     FOREIGN KEY (ID_Empleado) REFERENCES EMPLEADO(ID_Empleado)
