@@ -159,6 +159,7 @@ CREATE TABLE CLIENTE (
     FOREIGN KEY (ID_Cliente) REFERENCES PERSONA(ID_Persona)
 );
 
+
 CREATE TABLE PASAJERO (
     ID_Pasajero INT PRIMARY KEY,
 	Edad INT, -- Para calcular edad
