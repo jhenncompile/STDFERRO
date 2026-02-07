@@ -30,6 +30,9 @@ CREATE TABLE ESTACION (
     Capacidad_Vias INT DEFAULT 2,
     FOREIGN KEY (ID_Ciudad) REFERENCES CIUDAD(ID_Ciudad)
 );
+-- =============================================
+-- 2. RUTAS Y TRAMOS
+-- =============================================
 
 CREATE TABLE RUTA (
     ID_Ruta INT PRIMARY KEY IDENTITY(1,1),
@@ -72,24 +75,26 @@ CREATE TABLE RUTA_TRAMO (
 
 CREATE TABLE TREN (
     ID_Tren INT PRIMARY KEY IDENTITY(1,1),
-    Codigo_Identificador VARCHAR(50) UNIQUE NOT NULL,
-    Modelo VARCHAR(50),
-    Fecha_Fabricacion DATE,
-    Velocidad_Max DECIMAL(5,2),
-    Estado VARCHAR(20) DEFAULT 'OPERATIVO' -- 'MANTENIMIENTO', 'BAJA'
+    --Codigo_Identificador VARCHAR(50) UNIQUE NOT NULL,
+    Capacidad_Pasajeros INT, -- capacidad_pasajeros: int 
+	Estado VARCHAR(20) DEFAULT 'OPERATIVO', -- 'MANTENIMIENTO', 'BAJA'
+    Fecha_Fabricacion DATE, -- fecha_fabricacion: date
+    Velocidad_Max DECIMAL(10,2) -- velocidad_max: float
+    
 );
 
 CREATE TABLE TIPO_VAGON (
     ID_Tipo_Vagon INT PRIMARY KEY IDENTITY(1,1),
-    Nombre VARCHAR(50), -- 'Cama', 'Semicama', 'Comedor'
-    Precio_Base_Factor DECIMAL(10,2) -- Factor multiplicador de precio
+    Descripcion VARCHAR(100), -- descripcion: string
+    Precio_Base DECIMAL(10,2) -- precio_base: float
 );
 
 CREATE TABLE VAGON (
-    ID_Vagon INT PRIMARY KEY IDENTITY(1,1),
-    ID_Tren INT, -- Un vagón pertenece a un tren (o puede ser null si está en patio)
+    ID_Vagon INT PRIMARY KEY IDENTITY(1,1), -- ID: int
+    ID_Tren INT, 
     ID_Tipo_Vagon INT NOT NULL,
-    Capacidad_Asientos INT NOT NULL,
+    Cant_Asientos INT, -- cant_asientos: int
+    Capacidad_Carga DECIMAL(10,2), -- capacidad: float 
     FOREIGN KEY (ID_Tren) REFERENCES TREN(ID_Tren),
     FOREIGN KEY (ID_Tipo_Vagon) REFERENCES TIPO_VAGON(ID_Tipo_Vagon)
 );
@@ -97,10 +102,37 @@ CREATE TABLE VAGON (
 CREATE TABLE ASIENTO (
     ID_Asiento INT PRIMARY KEY IDENTITY(1,1),
     ID_Vagon INT NOT NULL,
-    Numero_Asiento VARCHAR(10) NOT NULL, -- "4A", "4B"
+    Numero INT, -- numero: int
     Ubicacion VARCHAR(20), -- 'VENTANA', 'PASILLO'
     FOREIGN KEY (ID_Vagon) REFERENCES VAGON(ID_Vagon)
 );
+-- =============================================
+-- 4. ITINERARIOS (El centro del diagrama)
+-- =============================================
+
+CREATE TABLE ITINERARIO (
+    ID_Itinerario INT PRIMARY KEY IDENTITY(1,1), -- ID: int
+    Estado VARCHAR(20), -- estado: string
+    Fecha_Llegada DATE, -- fecha_llegada: date
+    Fecha_Salida DATE, -- fecha_salida: date
+    Hora_Llegada TIME, -- hora_llegada: time
+    Hora_Salida TIME   -- hora_salida: time
+);
+
+CREATE TABLE TREN_ITINERARIO (
+    ID_Tren_Itinerario INT PRIMARY KEY IDENTITY(1,1), -- id: int
+    
+    -- Estas columnas representan las LÍNEAS NEGRAS de tu diagrama
+    ID_Tren INT NOT NULL,      -- Línea hacia TREN
+    ID_Itinerario INT NOT NULL,-- Línea hacia ITINERARIO
+    
+    ID_Ruta_Tramo INT NOT NULL,      
+
+    FOREIGN KEY (ID_Tren) REFERENCES TREN(ID_Tren),
+    FOREIGN KEY (ID_Itinerario) REFERENCES ITINERARIO(ID_Itinerario),
+    FOREIGN KEY ( ID_Ruta_Tramo) REFERENCES RUTA_TRAMO( ID_Ruta_Tramo)
+);
+
 
 -- =============================================
 -- MÓDULO 3: PERSONAS Y ROLES (HERENCIA)
@@ -111,9 +143,8 @@ CREATE TABLE PERSONA (
     ID_Persona INT PRIMARY KEY IDENTITY(1,1),
     Nombre VARCHAR(100) NOT NULL,
     Apellidos VARCHAR(100) NOT NULL,
-    CI_Documento VARCHAR(20) UNIQUE NOT NULL,
-    Celular VARCHAR(20),
-    Email VARCHAR(100), 
+    CI VARCHAR(20) UNIQUE NOT NULL,
+    Celular VARCHAR(20), 
     Es_Cliente BIT DEFAULT 0,   -- 1 = Sí, 0 = No
     Es_Pasajero BIT DEFAULT 0,  -- 1 = Sí, 0 = No
     Es_Empleado BIT DEFAULT 0   -- 1 = Sí, 0 = No
@@ -124,13 +155,14 @@ CREATE TABLE CLIENTE (
     ID_Cliente INT PRIMARY KEY, -- Es PK y FK a la vez
     Nit VARCHAR(20),
     Razon_Social VARCHAR(100),
+	Correo VARCHAR(100),
     FOREIGN KEY (ID_Cliente) REFERENCES PERSONA(ID_Persona)
 );
 
 CREATE TABLE PASAJERO (
     ID_Pasajero INT PRIMARY KEY,
+	Edad INT, -- Para calcular edad
     Nacionalidad VARCHAR(50),
-    Edad INT, -- Para calcular edad
     FOREIGN KEY (ID_Pasajero) REFERENCES PERSONA(ID_Persona)
 );
 
@@ -150,31 +182,7 @@ CREATE TABLE EMPLEADO (
 );
 
 -- =============================================
--- MÓDULO 4: OPERACIONES Y PROGRAMACIÓN
--- =============================================
-
-CREATE TABLE ITINERARIO (
-    ID_Itinerario INT PRIMARY KEY IDENTITY(1,1),
-    Fecha_Salida DATE NOT NULL,
-    Hora_Salida TIME NOT NULL,
-    Fecha_Llegada_Estimada DATE NOT NULL,
-    Hora_Llegada_Estimada TIME NOT NULL,
-    Estado VARCHAR(20) DEFAULT 'PROGRAMADO' -- 'EN CURSO', 'FINALIZADO', 'CANCELADO'
-);
-
-CREATE TABLE TREN_ITINERARIO (
-    ID_Tren_Itinerario INT PRIMARY KEY IDENTITY(1,1),
-    ID_Tren INT NOT NULL,
-    ID_Itinerario INT NOT NULL,
-    ID_Ruta INT NOT NULL, -- Vincula el tren a una ruta específica en una fecha
-    --Precio_Base_Ruta DECIMAL(10,2),
-    FOREIGN KEY (ID_Tren) REFERENCES TREN(ID_Tren),
-    FOREIGN KEY (ID_Itinerario) REFERENCES ITINERARIO(ID_Itinerario),
-    FOREIGN KEY (ID_Ruta) REFERENCES RUTA(ID_Ruta)
-);
-
--- =============================================
--- MÓDULO 5: FINANZAS Y COMERCIAL (El Tridente)
+-- 6. COMERCIAL (Ventas y Reservas)
 -- =============================================
 
 CREATE TABLE METODO_PAGO (
@@ -211,9 +219,6 @@ CREATE TABLE VENTA (
     ID_Empleado INT NOT NULL, -- Taquillero
     Fecha_Emision DATETIME DEFAULT GETDATE(),
     Monto_Total DECIMAL(10,2) NOT NULL CHECK (Monto_Total >= 0),
-    Tipo_Documento VARCHAR(30), -- 'Recibo Anticipo', 'Factura Final'
-    Nit_Factura VARCHAR(20),
-    Razon_Social VARCHAR(100),
     Es_Reserva BIT DEFAULT 0, -- 1 si es el pago parcial, 0 si es total
     FOREIGN KEY (ID_Cliente) REFERENCES CLIENTE(ID_Cliente),
     FOREIGN KEY (ID_Empleado) REFERENCES EMPLEADO(ID_Empleado)
@@ -225,6 +230,8 @@ CREATE TABLE TRANSACCION (
     ID_Metodo_Pago INT NOT NULL,
     Monto DECIMAL(10,2) NOT NULL,
     Fecha_Pago DATETIME DEFAULT GETDATE(),
+	Estado VARCHAR(20), -- estado: string
+    Tipo_Pago VARCHAR(50),
     FOREIGN KEY (ID_Venta) REFERENCES VENTA(ID_Venta),
     FOREIGN KEY (ID_Metodo_Pago) REFERENCES METODO_PAGO(ID_Metodo)
 );
@@ -265,7 +272,7 @@ CREATE TABLE BOLETO (
 );
 
 -- =============================================
--- MÓDULO 7: DEVOLUCIONES (Egresos Variables)
+-- 8. DEVOLUCIONES
 -- =============================================
 
 -- tabla para catalogar los motivos (Ej: 'Salud', 'Cancelación Tren', 'Error Venta
@@ -273,7 +280,7 @@ CREATE TABLE BOLETO (
 CREATE TABLE TIPO_MOTIVO (
     ID_Tipo_Motivo INT PRIMARY KEY IDENTITY(1,1),
     Nombre VARCHAR(50) NOT NULL, 
-    Descripcion VARCHAR(200) -- Opcional para explicar en qué casos aplica
+   
 );
 
 ---Tabla de Devoluciones actualizada
@@ -284,7 +291,6 @@ CREATE TABLE DEVOLUCION (
     Fecha_Solicitud DATETIME DEFAULT GETDATE(),
     Monto_Reembolsado DECIMAL(10,2) NOT NULL,
     Observacion VARCHAR(200),      -- Detalle específico (Ej: "Cliente presentó certificado médico")
-    Estado VARCHAR(20) DEFAULT 'APROBADO',
     
     FOREIGN KEY (ID_Boleto) REFERENCES BOLETO(ID_Boleto),
     FOREIGN KEY (ID_Tipo_Motivo) REFERENCES TIPO_MOTIVO(ID_Tipo_Motivo)
